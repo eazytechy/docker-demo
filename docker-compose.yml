@@ -1,0 +1,41 @@
+version: '3.9'
+
+services:
+  nginx:
+    build: ./nginx 
+    ports: 
+      - 8888:80 
+    volumes:  
+      - uwsgi_data:/tmp/uwsgi/
+      - web_static:/var/www/demoApp/assets/:ro
+    depends_on: 
+      - web
+    restart: "on-failure" 
+    
+  web:
+    image: docker-demo
+    build: .
+    command: uwsgi --ini uwsgi.ini
+    volumes: 
+      - uwsgi_data:/tmp/uwsgi/
+      - web_static:/home/app/demoApp/static/
+    restart: "on-failure"
+    depends_on:
+      - migration
+      - collectstatic
+
+  migration:
+    image: docker-demo
+    command: python manage.py migrate --noinput
+    volumes: 
+      - .:/home/app/demoApp/
+
+  collectstatic:
+    image: docker-demo
+    command: python manage.py collectstatic --noinput 
+    volumes:
+      - web_static:/var/www/demoApp/assets/
+
+volumes:
+  web_static:
+  uwsgi_data:
